@@ -72,6 +72,7 @@ for %%F in (%pkgPath%\*.pkg) do (
   set versionStr=0000!VERSION:.=!
   set versionStr=!versionStr:~-%numLen%!
 
+  set volumeType=pkg_ps4_ac_data
   set contentRegion=!CONTENT_ID:~0,2!
   set contentNumber=!CONTENT_ID:~2,5!
   set contentTitleID=!CONTENT_ID:~7,9!
@@ -85,6 +86,8 @@ for %%F in (%pkgPath%\*.pkg) do (
   if not exist !pkgPath!\!newPkgName! (mkdir !pkgPath!\!newPkgName!)
   !orbisPubCmd! img_extract --passcode !passcode! !fullname! !pkgPath!\!newPkgName!
   
+  if not exist !pkgPath!\!newPkgName!\Image0 (set volumeType=pkg_ps4_ac_nodata)
+  if not exist !pkgPath!\!newPkgName!\Image0\sce_sys (mkdir !pkgPath!\!newPkgName!\Image0\sce_sys)
   echo [Info] move sfo ^& *.png to Image0\sce_sys\ and edit param.sfo
   move /y "!pkgPath!\!newPkgName!\Sc0\param.sfo" "!pkgPath!\!newPkgName!\Image0\sce_sys"
   !sfoCmd! -e CONTENT_ID "!contentNewID!" -e TITLE_ID "!newTitleID!" !pkgPath!\!newPkgName!\Image0\sce_sys\param.sfo
@@ -95,7 +98,7 @@ for %%F in (%pkgPath%\*.pkg) do (
   )
 
   if exist "!gp4Path!" del /q "!gp4Path!"
-  !orbisPubCmd! gp4_proj_create --volume_type pkg_ps4_ac_data --content_id !contentNewID!  --passcode !passcode! --entitlement_key !passcode! !gp4Path!
+  !orbisPubCmd! gp4_proj_create --volume_type !volumeType! --content_id !contentNewID!  --passcode !passcode! --entitlement_key !passcode! !gp4Path!
 
   if exist !pkgPath!\!newPkgName!\Image0\sce_sys\ (
     for %%N in (!pkgPath!\!newPkgName!\Image0\sce_sys\*) do (

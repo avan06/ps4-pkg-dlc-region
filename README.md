@@ -1,7 +1,14 @@
 ﻿# ps4-pkg-dlc-region
 
-ps4-pkg-dlc-region is windows batch script can batch change the region and TitleID of the original ps4 dlc Pkg, and it is base on [`orbis-pub-gen`](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/) and [`sfo by Hippie68`](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/).
+ps4-pkg-dlc-region is windows batch script can batch change the region and TitleID of the original ps4 dlc Pkg, and it is base on [`orbis-pub-gen`](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/) and [`sfo by Hippie68`](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/).  
 
+It will automatically determine that the volume_type of the original pkg is pkg_ps4_ac_data or pkg_ps4_ac_nodata  
+
+- pkg_ps4_ac_data:  
+DLC with extra files  
+
+- pkg_ps4_ac_nodata:  
+DLC without extra files (unlockable)  
 
 ## User Defined
 
