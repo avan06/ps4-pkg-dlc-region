@@ -11,7 +11,7 @@ DLC with extra files
 DLC without extra files (unlockable)  
 
 - pkg_ps4_patch:  
-PS4 Game Update  
+PS4 Game Update (during the parsing, you will be prompted to enter the original PS4 Game PKG path)  
 
 - pkg_ps4_app:  
 PS4 Game  
