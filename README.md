@@ -32,11 +32,11 @@ Determines the path of sfo(hippie68), nullable if it has been set in the path of
 - pkgPath  
 Determine the path to the original pkg  
 
-- newRegion(length is 2)  
+- newRegion (length is 2)  
 Determine the Region of the generated pkg  
 JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean  
 
-- newTitleID(length is 9)  
+- newTitleID (length is 9)  
 Determine the TitleID of the generated pkg  
 
 - genDirName  
@@ -51,15 +51,15 @@ y: remove all temporary files, n: don't delete anything
 - passcode  
 Determine the passcode value for pkg  
 
-- overwriteUnpackedArchives  
+- overwriteUnpackedArchives (New)  
 Determines whether to still extract when an unpacked PKG archive already exists,  
 y: perform extract and overwrite, n: use existing unpacked file  
 
-- overwriteExistGP4  
+- overwriteExistGP4 (New)  
 Determines whether to override gp4 configuration, when gp4 archive already exists,  
 y: generate new gp4 file, n: use existing gp4 file  
 
-- pkgCreate  
+- pkgCreate (New)  
 Determines whether to automatically generate a new PKG after extract,  
 y: generate new PKG, n: extract only  
 

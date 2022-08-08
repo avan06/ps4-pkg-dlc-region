@@ -16,10 +16,10 @@ set pkgPath=.\dlc
 :: Determine the Region(length is 2) of the generated pkg
 :: Empty value, indicating that the Region is unchanged
 :: JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean
-set newRegion=JP
+set newRegion=
 :: Determine the TitleID(length is 9) of the generated pkg
 :: Empty value, indicating that the TitleID is unchanged
-set newTitleID=CUSA12230
+set newTitleID=
 :: Determines the directory name for the generated output
 set genDirName=new
 :: Determine the path of icon0.png when the original pkg has no preview image, the generated pkg will use this file
