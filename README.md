@@ -63,6 +63,13 @@ y: generate new gp4 file, n: use existing gp4 file
 Determines whether to automatically generate a new PKG after extract,  
 y: generate new PKG, n: extract only  
 
+- pfsCompression (New)  
+Determines whether to enable compression for package files,  
+y: compressed, n: not compressed  
+
+- pkgDigest (New)  
+Determines whether to calculate digest after pkg create,  
+y: digest calculation, n: faster creation  
 
 ## Reference
 

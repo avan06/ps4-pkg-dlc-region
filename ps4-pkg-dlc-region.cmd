@@ -28,12 +28,20 @@ set icon0Path=%scriptPath%/icon0.png
 set cleanup=n
 :: Determine the passcode value for pkg
 set passcode=00000000000000000000000000000000
+
+:: =========== Overwrite options ===========
 :: Determines whether to still extract when an unpacked PKG archive already exists, y: perform extract and overwrite, n: use existing unpacked file
 set overwriteUnpackedArchives=y
 :: Determines whether to override gp4 configuration, when gp4 archive already exists, y: generate new gp4 file, n: use existing gp4 file
 set overwriteExistGP4=y
+
+:: =========== Generate options ===========
 :: Determines whether to automatically generate a new PKG after extract, y: generate new PKG, n: extract only
 set pkgCreate=y
+:: Determines whether to enable compression for package files, y: compressed, n: not compressed
+set pfsCompression=y
+:: Determines whether to calculate digest after pkg create, y: digest calculation, n: faster creation
+set pkgDigest=y
 :: =========== User Defined Block End ===========
 
 echo:
@@ -61,6 +69,7 @@ pushd %pkgFullPath%
 set pkgFullPath=%CD%
 popd
 
+call :CreateBinEditVBS
 :: appVer and version, length of left padding
 set numLen=4
 set /a count = 0
@@ -144,8 +153,21 @@ set doExtract=y
 if not exist !pathPkgRoot! (mkdir !pathPkgRoot!)
 if "!overwriteUnpackedArchives!"=="n" if exist "!pathGp4!" (set doExtract=n)
 if "!doExtract!"=="y" (
+  set fileCount=0
   echo [Info] extract pkg to !newPkgName!
-  !orbisPubCmd! img_extract --passcode !passcode! "!fullname!" !pathPkgRoot!
+  for /f "tokens=*" %%L in ('!orbisPubCmd! img_file_list --passcode !passcode! --oformat long "!fullname!" 2^> nul') do (
+    for /f "tokens=3,5 delims= " %%a in ("%%L") do (
+      set dirName=%%a
+      set dirName=!dirName:/=\!
+      set file=%%b
+      if not "!file!"=="" (
+        set /a fileCount=!fileCount!+1
+        set winFile=!file:/=\!
+        echo extract!fileCount!: !file!
+        !orbisPubCmd! img_extract --passcode !passcode! "!fullname!:!file!" !pathPkgRoot!\!winFile! 1> nul
+      ) else if not exist !pathPkgRoot!\!dirName! mkdir !pathPkgRoot!\!dirName!
+    )
+  )
 )
 
 if not exist !pathImage0! (set volumeType=pkg_ps4_ac_nodata)
@@ -211,16 +233,39 @@ if not exist "!pathGp4!" (
   ) else if !CATEGORY!==gd (
     set volumeType=pkg_ps4_app
     !orbisPubCmd! gp4_proj_create --volume_type !volumeType! --content_id !contentNewID! --passcode !passcode! --entitlement_key !passcode! --storage_type !storageType! "!pathGp4!"
+    if !chunkCount! GTR 1 (
+      set /a chunkCount=!chunkCount!-1
+      for /L %%C in (1,1,!chunkCount!) do (
+        !orbisPubCmd! gp4_chunk_add --id %%C --label remaining_data%%C "!pathGp4!"
+      )
+    )
   ) else (!orbisPubCmd! gp4_proj_create --volume_type !volumeType! --content_id !contentNewID! --passcode !passcode! --entitlement_key !passcode! "!pathGp4!")
   if %ERRORLEVEL% NEQ 0 (echo gp4 proj create failed... & goto :batchNext)
   
+  if "!pfsCompression!"=="y" (set compression=enable) else (set compression=disable)
   for /F %%N in ('dir /b /s /a:-d "!pathImage0!"') do (
     set name=%%~nN
     set ext=%%~xN
     set fullname=%%N
     call set subName=%%fullname:!pathImage0!\=%%
-    if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" (
-      !orbisPubCmd! gp4_file_add --force --pfs_compression enable !fullname! !subName:\=/! "!pathGp4!")
+    if "!subName!"=="sce_sys\nptitle.dat" (
+      if not "!contentTitleID!"=="!newTitleIDTmp!" (
+        echo [Warn] Fix the TitleID [!contentTitleID! to !newTitleIDTmp!] of !subName!
+        binEdit.vbs "!fullname!" "!contentTitleID!" "!newTitleIDTmp!"
+      )
+      !orbisPubCmd! gp4_file_add --force --pfs_compression !compression! !fullname! !subName:\=/! "!pathGp4!"
+    ) else if "!subName!"=="sce_sys\playgo-chunk.dat" (
+      if not "!contentTitleID!"=="!newTitleIDTmp!" (
+        echo [Warn] Fix the TitleID [!contentTitleID! to !newTitleIDTmp!] of !subName!
+        binEdit.vbs "!fullname!" "!contentTitleID!" "!newTitleIDTmp!"
+      )
+    ) else if "!subName!"=="sce_sys\app\playgo-chunk.dat" (
+      if not "!contentTitleID!"=="!newTitleIDTmp!" (
+        echo [Warn] Fix the TitleID [!contentTitleID! to !newTitleIDTmp!] of !subName!
+        binEdit.vbs "!fullname!" "!contentTitleID!" "!newTitleIDTmp!"
+      )
+    ) else if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" (
+      !orbisPubCmd! gp4_file_add --force --pfs_compression !compression! !fullname! !subName:\=/! "!pathGp4!")
   )
   
   if not exist !pathSceSys!\icon0.png (
@@ -230,8 +275,9 @@ if not exist "!pathGp4!" (
 
 if "!pkgCreate!"=="y" (
   echo [Info] Creating !newPkgName!.pkg...
+  if "!pkgDigest!"=="y" (set digest=) else (set digest=--skip_digest)
   if not exist !pkgFullPath!\!genDirName! (mkdir !pkgFullPath!\!genDirName!)
-  !orbisPubCmd! img_create --no_progress_bar "!pathGp4!" !pkgFullPath!\!genDirName!\!newPkgName!.pkg
+  !orbisPubCmd! img_create --no_progress_bar !digest! "!pathGp4!" !pkgFullPath!\!genDirName!\!newPkgName!.pkg
 )
 
 if "!cleanup!"=="y" rmdir /s/q !pathPkgRoot!
@@ -239,4 +285,91 @@ if "!cleanup!"=="y" rmdir /s/q !pathPkgRoot!
 :batchNext
 echo:
 echo:
+goto :eof
+
+
+::
+:: Create VBS to replace values
+:: Usage: cscript binEdit.vbs "inPath" "oldStr" "newStr"
+::
+:CreateBinEditVBS
+echo inPath = Wscript.Arguments(0) > binEdit.vbs
+echo oldStr = Wscript.Arguments(1) >> binEdit.vbs
+echo newStr = Wscript.Arguments(2) >> binEdit.vbs
+echo oldHex = StrToHex(oldStr) >> binEdit.vbs
+echo newHex = StrToHex(newStr) >> binEdit.vbs
+
+echo BinaryData = ReadBinary(inPath) >> binEdit.vbs
+echo MyData = Replace(BinaryData, oldHex, newHex) >> binEdit.vbs
+
+echo Dim Fso >> binEdit.vbs
+echo Set Fso = WScript.CreateObject("Scripting.FileSystemObject") >> binEdit.vbs
+
+echo if Fso.FileExists(inPath ^& ".bak") then >> binEdit.vbs
+echo   Fso.DeleteFile(inPath ^& ".bak") >> binEdit.vbs
+echo end if >> binEdit.vbs
+
+echo Fso.MoveFile inPath, inPath ^& ".bak"  >> binEdit.vbs
+
+echo WriteBinary inPath, MyData >> binEdit.vbs
+
+echo Wscript.Quit(0) >> binEdit.vbs
+
+echo Function StrToHex(Str) >> binEdit.vbs
+echo   Dim strHex >> binEdit.vbs
+echo   For i=1 To Len(Str) >> binEdit.vbs
+echo     strHex = strHex + Hex(Asc(Mid(Str,i,1))) >> binEdit.vbs
+echo   Next >> binEdit.vbs
+echo   StrToHex = strHex >> binEdit.vbs
+echo End Function >> binEdit.vbs
+
+echo Function ReadBinary(FileName) >> binEdit.vbs
+echo  Dim Stream, ObjXML, MyNode >> binEdit.vbs
+
+echo  Set ObjXML = CreateObject("Microsoft.XMLDOM") >> binEdit.vbs
+echo  Set MyNode = ObjXML.CreateElement("binary") >> binEdit.vbs
+echo  Set Stream = CreateObject("ADODB.Stream") >> binEdit.vbs
+
+echo  MyNode.DataType = "bin.hex" >> binEdit.vbs
+
+echo  Stream.Type = 1 >> binEdit.vbs
+echo  Stream.Mode = 3 >> binEdit.vbs
+echo  Stream.Open >> binEdit.vbs
+echo  Stream.Position = 0 >> binEdit.vbs
+echo  Stream.LoadFromFile FileName >> binEdit.vbs
+
+echo  MyNode.NodeTypedValue = Stream.Read() >> binEdit.vbs
+
+echo  Stream.Close >> binEdit.vbs
+
+echo  ReadBinary = MyNode.Text >> binEdit.vbs
+
+echo  Set MyNode = Nothing >> binEdit.vbs
+echo  Set Stream = Nothing >> binEdit.vbs
+echo  Set ObjXML = Nothing >> binEdit.vbs
+echo End Function >> binEdit.vbs
+
+echo Function WriteBinary(FileName, BufferData) >> binEdit.vbs
+echo  Dim Stream, ObjXML, MyNode >> binEdit.vbs
+
+echo  Set ObjXML = CreateObject("Microsoft.XMLDOM") >> binEdit.vbs
+echo  Set MyNode = ObjXML.CreateElement("binary") >> binEdit.vbs
+echo  Set Stream = CreateObject("ADODB.Stream") >> binEdit.vbs
+
+echo  MyNode.DataType = "bin.hex" >> binEdit.vbs
+echo  MyNode.Text = BufferData >> binEdit.vbs
+
+echo  Stream.Type = 1 >> binEdit.vbs
+echo  Stream.Open >> binEdit.vbs
+echo  if Lenb(MyNode.NodeTypedValue) ^> 0 then >> binEdit.vbs
+echo    Stream.Write MyNode.NodeTypedValue >> binEdit.vbs
+echo  end if >> binEdit.vbs
+echo  Stream.SaveToFile FileName, 2 >> binEdit.vbs
+echo  Stream.Close >> binEdit.vbs
+
+echo  Set stream = Nothing >> binEdit.vbs
+echo  Set MyNode = Nothing >> binEdit.vbs
+echo  Set ObjXML = Nothing >> binEdit.vbs
+echo End Function >> binEdit.vbs
+
 goto :eof
