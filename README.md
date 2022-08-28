@@ -39,6 +39,8 @@ JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean
 - newTitleID (length is 9)  
 Determine the TitleID of the generated pkg  
 
+### Misc options  
+
 - genDirName  
 Determines the directory name for the generated output  
 
@@ -49,7 +51,15 @@ Determine the path of icon0.png when the original pkg has no preview image, the 
 y: remove all temporary files, n: don't delete anything  
 
 - passcode  
-Determine the passcode value for pkg  
+Determine the passcode value for pkg (extract and generate)  
+
+### Extract options  
+
+- pkgExtractShowStatus (New)  
+Determines whether to show the extract status, show extract status will be slower if the pkg file size is very large,  
+y: show, n: not show
+
+### Overwrite options  
 
 - overwriteUnpackedArchives (New)  
 Determines whether to still extract when an unpacked PKG archive already exists,  
@@ -58,6 +68,8 @@ y: perform extract and overwrite, n: use existing unpacked file
 - overwriteExistGP4 (New)  
 Determines whether to override gp4 configuration, when gp4 archive already exists,  
 y: generate new gp4 file, n: use existing gp4 file  
+
+### Generate options  
 
 - pkgCreate (New)  
 Determines whether to automatically generate a new PKG after extract,  

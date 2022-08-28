@@ -20,14 +20,20 @@ set newRegion=
 :: Determine the TitleID(length is 9) of the generated pkg
 :: Empty value, indicating that the TitleID is unchanged
 set newTitleID=
+
+:: =========== Misc options ===========
 :: Determines the directory name for the generated output
 set genDirName=new
 :: Determine the path of icon0.png when the original pkg has no preview image, the generated pkg will use this file
 set icon0Path=%scriptPath%/icon0.png
 :: y: remove all temporary files, n: don't delete anything
 set cleanup=n
-:: Determine the passcode value for pkg
+:: Determine the passcode value for pkg (extract and generate)
 set passcode=00000000000000000000000000000000
+
+:: =========== Extract options ===========
+:: Determines whether to show the extract status, show extract status will be slower if the pkg file size is very large, y: show, n: not show
+set pkgExtractShowStatus=y
 
 :: =========== Overwrite options ===========
 :: Determines whether to still extract when an unpacked PKG archive already exists, y: perform extract and overwrite, n: use existing unpacked file
@@ -150,24 +156,31 @@ set pathSceSys=!pathImage0!\sce_sys
 set pathGp4=!pathPkgRoot!\!contentNewID!.gp4
 set doExtract=y
 
+if "!overwriteUnpackedArchives!"=="n" if exist "!pathPkgRoot!" (set doExtract=n)
 if not exist !pathPkgRoot! (mkdir !pathPkgRoot!)
-if "!overwriteUnpackedArchives!"=="n" if exist "!pathGp4!" (set doExtract=n)
 if "!doExtract!"=="y" (
   set fileCount=0
   echo [Info] extract pkg to !newPkgName!
-  for /f "tokens=*" %%L in ('!orbisPubCmd! img_file_list --passcode !passcode! --oformat long "!fullname!" 2^> nul') do (
-    for /f "tokens=3,5 delims= " %%a in ("%%L") do (
+  if "!pkgExtractShowStatus!"=="y" (
+    for /f "tokens=3,5" %%a in ('!orbisPubCmd! img_file_list --passcode !passcode! --oformat long "!fullname!" 2^> nul') do (
       set dirName=%%a
       set dirName=!dirName:/=\!
       set file=%%b
       if not "!file!"=="" (
         set /a fileCount=!fileCount!+1
+        rem set files[!fileCount!]=!file!
         set winFile=!file:/=\!
         echo extract!fileCount!: !file!
         !orbisPubCmd! img_extract --passcode !passcode! "!fullname!:!file!" !pathPkgRoot!\!winFile! 1> nul
       ) else if not exist !pathPkgRoot!\!dirName! mkdir !pathPkgRoot!\!dirName!
     )
-  )
+  rem for /L %%i in (1,1,!fileCount!) do (
+  rem   set file=!files[%%i]!
+  rem   set winFile=!file:/=\!
+  rem   echo extract!fileCount!: !file!
+  rem   !orbisPubCmd! img_extract --passcode !passcode! "!fullname!:!file!" !pathPkgRoot!\!winFile! 1> nul
+  rem )
+  ) else !orbisPubCmd! img_extract --passcode !passcode! "!fullname!" !pathPkgRoot!
 )
 
 if not exist !pathImage0! (set volumeType=pkg_ps4_ac_nodata)
@@ -204,7 +217,7 @@ for /F %%N in ('dir /b /s "!pathSc0!"') do (
         echo [Info] chunkCount:!chunkCount!, scenarioCount:!scenarioCount!
       )
     )
-  ) else if not !name!!ext!==license.dat if not !name!!ext!==license.info if not !name!!ext!==psreserved.dat if not !name!!ext!==origin-deltainfo.dat if not !ext!==.dds ( ::if "!name:playgo-=!"=="!name!" 
+  ) else if not !name!!ext!==license.dat if not !name!!ext!==license.info if not !name!!ext!==psreserved.dat if not !name!!ext!==origin-deltainfo.dat if not !ext!==.dds if not !name!!ext!==pubtoolinfo.dat ( ::if "!name:playgo-=!"=="!name!" 
     if "!dirAttr!"=="d" (
       if not exist !pathSceSys!!subName! mkdir !pathSceSys!!subName!
     ) else (move /y "!fullname!" "!pathSceSys!!subName!")
@@ -217,8 +230,8 @@ if not exist "!pathGp4!" (
   if !CATEGORY!==gp (
     set volumeType=pkg_ps4_patch
     echo:
-    echo Handling !newTitleIDTmp!-patch is required the original !newTitleIDTmp!-app...
-    echo Preess [Enter] the APP path of !TITLE!:
+    echo Handling !newTitleIDTmp!-patch is required the original !newTitleIDTmp!-app pkg...
+    echo Preess [Enter] the pkg path of !TITLE!:
     set /p appPath=
     echo:
     if not exist !appPath! (echo !newTitleIDTmp!-app path: !appPath! & echo Does not exist... & goto :batchNext)
@@ -264,7 +277,7 @@ if not exist "!pathGp4!" (
         echo [Warn] Fix the TitleID [!contentTitleID! to !newTitleIDTmp!] of !subName!
         binEdit.vbs "!fullname!" "!contentTitleID!" "!newTitleIDTmp!"
       )
-    ) else if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" (
+    ) else if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" if not "!subName!"=="sce_sys\pubtoolinfo.dat" (
       !orbisPubCmd! gp4_file_add --force --pfs_compression !compression! !fullname! !subName:\=/! "!pathGp4!")
   )
   
