@@ -95,10 +95,7 @@ for %%F in (%pkgFullPath%\*.pkg) do (
   call :GeneratePkg
 )
 
-:batchEnd
-
-pause
-
+goto :batchEnd
 
 ::
 :: Generate DLC Package
@@ -386,3 +383,8 @@ echo  Set ObjXML = Nothing >> binEdit.vbs
 echo End Function >> binEdit.vbs
 
 goto :eof
+
+
+:batchEnd
+
+pause
