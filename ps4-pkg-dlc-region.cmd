@@ -11,8 +11,10 @@ set scriptPath=%~dp0%
 set orbisPubPath=
 :: Determines the path of sfo(hippie68), nullable if it has been set in the path of windows
 set sfoPath=
-:: Determine the path to the original pkg
+:: Specify the path for the PKG files to be scanned. Multiple PKG files can be scanned in batches.
 set pkgPath=.\dlc
+
+:: =========== param.sfo options ===========
 :: Determine the Region(length is 2) of the generated pkg
 :: Empty value, indicating that the Region is unchanged
 :: JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean
@@ -20,6 +22,10 @@ set newRegion=
 :: Determine the TitleID(length is 9) of the generated pkg
 :: Empty value, indicating that the TitleID is unchanged
 set newTitleID=
+:: Determine the ContentName of the generated pkg
+:: Empty value, indicating that the ContentName is unchanged
+:: ContentName is the name at the end of CONTENT_ID, which is typically 16 characters in length.
+set newContentName=
 
 :: =========== Misc options ===========
 :: Determines the directory name for the generated output
@@ -33,11 +39,11 @@ set passcode=00000000000000000000000000000000
 
 :: =========== Extract options ===========
 :: Determines whether to show the extract status, show extract status will be slower if the pkg file size is very large, y: show, n: not show
-set pkgExtractShowStatus=y
+set pkgExtractShowStatus=n
 
 :: =========== Overwrite options ===========
 :: Determines whether to still extract when an unpacked PKG archive already exists, y: perform extract and overwrite, n: use existing unpacked file
-set overwriteUnpackedArchives=y
+set overwriteUnpackedArchives=n
 :: Determines whether to override gp4 configuration, when gp4 archive already exists, y: generate new gp4 file, n: use existing gp4 file
 set overwriteExistGP4=y
 
@@ -50,15 +56,18 @@ set pfsCompression=y
 set pkgDigest=y
 :: =========== User Defined Block End ===========
 
-echo:
-echo   ps4 pkg dlc region changes batch script
+echo ---------------------------------------------------
+echo   ps4 pkg dlc region changes batch script v1.2
 echo   based on orbis-pub-gen and sfo
-echo:
-echo    The PKG path    is %pkgPath%
-echo    The new Region  is %newRegion%
+echo ---------------------------------------------------
+echo.
+echo    The PKG path is %pkgPath%
+echo    The new Region is %newRegion%
 echo    The new TitleID is %newTitleID%
-echo:
-echo:
+echo    The new ContentName is %newContentName%
+echo.
+echo ===================================================
+echo.
 
 set orbisPubCmd=orbis-pub-cmd
 if exist %orbisPubPath% orbisPubCmd=%orbisPubPath%/%orbisPubCmd%
@@ -66,18 +75,18 @@ set sfoCmd=sfo
 if exist %sfoPath% orbisPubCmd=%sfoPath%/%sfoCmd%
 
 where %orbisPubCmd% >nul
-if %ERRORLEVEL% NEQ 0 (echo orbis-pub-cmd not found & goto :batchEnd)
+if %ERRORLEVEL% NEQ 0 (echo [Error] orbis-pub-cmd not found & goto :batchEnd)
 where %sfoCmd% >nul
-if %ERRORLEVEL% NEQ 0 (echo sfo not found & goto :batchEnd)
+if %ERRORLEVEL% NEQ 0 (echo [Error] sfo not found & goto :batchEnd)
 
+:: Convert pkgFullPath from a relative path to an absolute path.
 set pkgFullPath=%pkgPath%
 pushd %pkgFullPath%
 set pkgFullPath=%CD%
 popd
 
 call :CreateBinEditVBS
-:: appVer and version, length of left padding
-set numLen=4
+
 set /a count = 0
 for %%F in (%pkgFullPath%\*.pkg) do (
   set CATEGORY=
@@ -89,30 +98,42 @@ for %%F in (%pkgFullPath%\*.pkg) do (
   set TITLE_ID=
   set APP_VER=
   set VERSION=
+  set USER_DEFINED_PARAM_1=
+  set pathPkgRoot=
+  set pathSc0=
+  set pathImage0=
+  set pathSceSys=
+  set pathGp4=
   set fullname=%%F
   set /a count += 1
   echo !count!: !fullname!
+  call :SfoQuery
   call :GeneratePkg
 )
 
 goto :batchEnd
 
-::
-:: Generate DLC Package
-::
-:GeneratePkg
-for /f "tokens=*" %%i in ('!sfoCmd! -q CATEGORY "!fullname!" 2^> nul') do (set CATEGORY=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q CONTENT_ID "!fullname!" 2^> nul') do (set CONTENT_ID=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q FORMAT "!fullname!" 2^> nul') do (set FORMAT=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q PUBTOOLINFO "!fullname!" 2^> nul') do (set PUBTOOLINFO=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q PUBTOOLVER "!fullname!" 2^> nul') do (set PUBTOOLVER=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q TITLE "!fullname!" 2^> nul') do (set TITLE=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q TITLE_ID "!fullname!" 2^> nul') do (set TITLE_ID=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q APP_VER "!fullname!" 2^> nul') do (set APP_VER=%%i)
-for /f "tokens=*" %%i in ('!sfoCmd! -q VERSION "!fullname!" 2^> nul') do (set VERSION=%%i)
+:SfoQuery
 
-if "!CONTENT_ID!"=="" (!sfoCmd! !fullname! & goto :batchNext)
+set queryPath=!fullname!
 
+if exist !pathSceSys!\param.sfo set queryPath=!pathSceSys!\param.sfo
+
+for /f "tokens=*" %%i in ('!sfoCmd! -q CATEGORY "!queryPath!" 2^> nul') do (set CATEGORY=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q CONTENT_ID "!queryPath!" 2^> nul') do (set CONTENT_ID=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q FORMAT "!queryPath!" 2^> nul') do (set FORMAT=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q PUBTOOLINFO "!queryPath!" 2^> nul') do (set PUBTOOLINFO=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q PUBTOOLVER "!queryPath!" 2^> nul') do (set PUBTOOLVER=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q TITLE "!queryPath!" 2^> nul') do (set TITLE=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q TITLE_ID "!queryPath!" 2^> nul') do (set TITLE_ID=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q APP_VER "!queryPath!" 2^> nul') do (set APP_VER=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q VERSION "!queryPath!" 2^> nul') do (set VERSION=%%i)
+for /f "tokens=*" %%i in ('!sfoCmd! -q USER_DEFINED_PARAM_1 "!queryPath!" 2^> nul') do (set USER_DEFINED_PARAM_1=%%i)
+
+if "!CONTENT_ID!"=="" (!sfoCmd! !queryPath! & echo [Error] Sfo invalid CONTENT_ID. & goto :batchNext)
+
+:: Edit/Replace text within a Variable, Syntax %variable:StrToFind=NewStr%
+:: https://ss64.com/nt/syntax-replace.html
 if not "!PUBTOOLINFO:digital50=!"=="!PUBTOOLINFO!" (set storageType=digital50
 ) else if not "!PUBTOOLINFO:digital25=!"=="!PUBTOOLINFO!" (set storageType=digital25
 ) else if not "!PUBTOOLINFO:bd50_50=!"=="!PUBTOOLINFO!" (set storageType=bd50_50
@@ -121,6 +142,8 @@ if not "!PUBTOOLINFO:digital50=!"=="!PUBTOOLINFO!" (set storageType=digital50
 ) else if not "!PUBTOOLINFO:bd25=!"=="!PUBTOOLINFO!" (set storageType=bd25
 ) else set storageType=
 
+:: appVer and version, length of left padding
+set numLen=4
 if "!APP_VER!"=="" (set appVerStr=0000) else (
   set appVerStr=0000!APP_VER:.=!
   set appVerStr=!appVerStr:~-%numLen%!
@@ -131,31 +154,58 @@ if "!VERSION!"=="" (set versionStr=0000) else (
   set versionStr=!versionStr:~-%numLen%!
 )
 
-set volumeType=pkg_ps4_ac_data
 set contentRegion=!CONTENT_ID:~0,2!
 set contentNumber=!CONTENT_ID:~2,5!
 set contentTitleID=!CONTENT_ID:~7,9!
-set contentName=!CONTENT_ID:~16!
+set contentTitleINum=!CONTENT_ID:~16,4!
+set contentName=!CONTENT_ID:~20!
 set newRegionTmp=!newRegion!
 set newTitleIDTmp=!newTitleID!
+set newContentNameTmp=!newContentName!
 
 if "!newRegionTmp!"=="" set newRegionTmp=!contentRegion!
 if "!newTitleIDTmp!"=="" set newTitleIDTmp=!contentTitleID!
+if "!newContentNameTmp!"=="" set newContentNameTmp=!contentName!
 
-set contentNewID=!newRegionTmp!!contentNumber!!newTitleIDTmp!!contentName!
+set contentNewID=!newRegionTmp!!contentNumber!!newTitleIDTmp!!contentTitleINum!!newContentNameTmp!
 set appVersion=A!appVerStr!-V!versionStr!
 set newPkgName=!contentNewID!-!appVersion!
-
 set pathPkgRoot=!pkgFullPath!\!newPkgName!
 set pathSc0=!pathPkgRoot!\Sc0
 set pathImage0=!pathPkgRoot!\Image0
 set pathSceSys=!pathImage0!\sce_sys
 set pathGp4=!pathPkgRoot!\!contentNewID!.gp4
-set doExtract=y
 
+goto :eof
+
+::
+:: Generate DLC Package
+::
+:GeneratePkg
+
+if exist !pathSceSys!\param.sfo (call :SfoQuery)
+echo ==================== SFO Info ====================
+echo   CATEGORY: !CATEGORY!
+echo   CONTENT_ID: !CONTENT_ID!
+echo   FORMAT: !FORMAT!
+echo   PUBTOOLINFO: !PUBTOOLINFO!
+echo   PUBTOOLVER: !PUBTOOLVER!
+echo   TITLE: !TITLE!
+echo   TITLE_ID: !TITLE_ID!
+echo   APP_VER: !APP_VER!
+echo   VERSION: !VERSION!
+echo   USER_DEFINED_PARAM_1: !USER_DEFINED_PARAM_1!
+echo   StorageType: !storageType!
+echo.
+echo   ContentNewID: !contentNewID!
+echo   PathImage0: !pathImage0!
+echo   PathSceSys: !pathSceSys!
+echo   PathGp4: !pathGp4!
+set doExtract=y
 if "!overwriteUnpackedArchives!"=="n" if exist "!pathPkgRoot!" (set doExtract=n)
 if not exist !pathPkgRoot! (mkdir !pathPkgRoot!)
 if "!doExtract!"=="y" (
+echo ==================== Extract ====================
   set fileCount=0
   echo [Info] extract pkg to !newPkgName!
   if "!pkgExtractShowStatus!"=="y" (
@@ -180,10 +230,12 @@ if "!doExtract!"=="y" (
   ) else !orbisPubCmd! img_extract --passcode !passcode! "!fullname!" !pathPkgRoot!
 )
 
+set volumeType=pkg_ps4_ac_data
 if not exist !pathImage0! (set volumeType=pkg_ps4_ac_nodata)
 if not exist !pathSceSys! (mkdir !pathSceSys!)
 
-echo [Info] move Sc0 to Image0\sce_sys\ and edit param.sfo
+echo ==================== Sc0 ====================
+echo [Info] move Sc0 to Image0\sce_sys\
 set chunkCount=0
 set scenarioCount=0
 for /F %%N in ('dir /b /s "!pathSc0!"') do (
@@ -194,7 +246,7 @@ for /F %%N in ('dir /b /s "!pathSc0!"') do (
   set dirAttr=!attr:~0,1!
   call set subName=%%fullname:!pathSc0!=%%
   if !pathSceSys!==\app\playgo-chunk.dat (
-    move /y "!fullname!" "!pathSceSys!"
+    move /y "!fullname!" "!pathSceSys!" >nul 2>&1
   ) else if !name!!ext!==playgo-manifest.xml (
     for /f "tokens=*" %%L in (!fullname!) do (
       set line1=%%L
@@ -217,22 +269,26 @@ for /F %%N in ('dir /b /s "!pathSc0!"') do (
   ) else if not !name!!ext!==license.dat if not !name!!ext!==license.info if not !name!!ext!==psreserved.dat if not !name!!ext!==origin-deltainfo.dat if not !ext!==.dds if not !name!!ext!==pubtoolinfo.dat ( ::if "!name:playgo-=!"=="!name!" 
     if "!dirAttr!"=="d" (
       if not exist !pathSceSys!!subName! mkdir !pathSceSys!!subName!
-    ) else (move /y "!fullname!" "!pathSceSys!!subName!")
+    ) else (move /y "!fullname!" "!pathSceSys!!subName!" >nul 2>&1)
   )
 )
+if not "!CONTENT_ID!"=="!contentNewID!" (
+echo ==================== param.sfo ====================
+echo [Info] edit param.sfo
 !sfoCmd! -e CONTENT_ID "!contentNewID!" -e TITLE_ID "!newTitleIDTmp!" !pathSceSys!\param.sfo
-
+)
 if exist "!pathGp4!" if "!overwriteExistGP4!"=="y" del /q "!pathGp4!"
 if not exist "!pathGp4!" (
+echo ==================== gp4 create ====================
   if !CATEGORY!==gp (
     set volumeType=pkg_ps4_patch
-    echo:
     echo Handling !newTitleIDTmp!-patch is required the original !newTitleIDTmp!-app pkg...
-    echo Preess [Enter] the pkg path of !TITLE!:
+:EnterBaseGamePath
+    echo [Drag and drop] the PKG file or [Enter] the path for "!TITLE!":
     set /p appPath=
-    echo:
-    if not exist !appPath! (echo !newTitleIDTmp!-app path: !appPath! & echo Does not exist... & goto :batchNext)
-  
+    if not exist !appPath! (echo !newTitleIDTmp!-app path: !appPath! & echo Does not exist... & echo. & goto :EnterBaseGamePath)
+    echo.
+    set appPath=!appPath:"=!
     !orbisPubCmd! gp4_proj_create --volume_type !volumeType! --content_id !contentNewID! --passcode !passcode! --entitlement_key !passcode! --storage_type !storageType! --app_path "!appPath!" "!pathGp4!"
     if !chunkCount! GTR 1 (
       set /a chunkCount=!chunkCount!-1
@@ -250,8 +306,10 @@ if not exist "!pathGp4!" (
       )
     )
   ) else (!orbisPubCmd! gp4_proj_create --volume_type !volumeType! --content_id !contentNewID! --passcode !passcode! --entitlement_key !passcode! "!pathGp4!")
-  if %ERRORLEVEL% NEQ 0 (echo gp4 proj create failed... & goto :batchNext)
-  
+  echo   volumeType: !volumeType!
+  echo.
+  if %ERRORLEVEL% NEQ 0 (echo [Error] gp4 proj create failed... & goto :batchNext)
+  echo [Info] gp4 file add
   if "!pfsCompression!"=="y" (set compression=enable) else (set compression=disable)
   for /F %%N in ('dir /b /s /a:-d "!pathImage0!"') do (
     set name=%%~nN
@@ -284,17 +342,22 @@ if not exist "!pathGp4!" (
 )
 
 if "!pkgCreate!"=="y" (
+  echo ==================== PKG Create ====================
   echo [Info] Creating !newPkgName!.pkg...
   if "!pkgDigest!"=="y" (set digest=) else (set digest=--skip_digest)
   if not exist !pkgFullPath!\!genDirName! (mkdir !pkgFullPath!\!genDirName!)
   !orbisPubCmd! img_create --no_progress_bar !digest! "!pathGp4!" !pkgFullPath!\!genDirName!\!newPkgName!.pkg
 )
 
-if "!cleanup!"=="y" rmdir /s/q !pathPkgRoot!
+if "!cleanup!"=="y" (
+echo ==================== Temp files removed ====================
+rmdir /s/q !pathPkgRoot!
+)
 
 :batchNext
-echo:
-echo:
+echo ===================================================
+echo.
+echo.
 goto :eof
 
 

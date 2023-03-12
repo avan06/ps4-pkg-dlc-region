@@ -1,6 +1,8 @@
 ﻿# ps4-pkg-dlc-region
 
-ps4-pkg-dlc-region is windows batch script can batch change the region and TitleID of the original ps4 dlc Pkg, and it is base on [`orbis-pub-gen`](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/) and [`sfo by Hippie68`](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/).  
+v1.2  
+
+ps4-pkg-dlc-region is windows batch script can batch change the region and TitleID of the original ps4 Pkg(dlc, patch, app), and it is base on [`orbis-pub-gen`](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/) and [`sfo by Hippie68`](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/).  
 
 It will automatically determine that the volume_type of the original pkg is pkg_ps4_ac_data or pkg_ps4_ac_nodata, pkg_ps4_patch,  pkg_ps4_app
 
@@ -30,14 +32,21 @@ Determines the path of orbis-pub, nullable if it has been set in the path of win
 Determines the path of sfo(hippie68), nullable if it has been set in the path of windows  
 
 - pkgPath  
-Determine the path to the original pkg  
+Specify the path for the PKG files to be scanned. Multiple PKG files can be scanned in batches.
 
 - newRegion (length is 2)  
 Determine the Region of the generated pkg  
+Empty value, indicating that the Region is unchanged
 JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean  
 
 - newTitleID (length is 9)  
 Determine the TitleID of the generated pkg  
+Empty value, indicating that the TitleID is unchanged  
+
+- newContentName (length is 16)  
+Determine the ContentName of the generated pkg  
+Empty value, indicating that the ContentName is unchanged  
+ContentName is the name at the end of CONTENT_ID, which is typically 16 characters in length.  
 
 ### Misc options  
 
@@ -87,6 +96,7 @@ y: digest calculation, n: faster creation
 
 [How to Change PS4 DLC Region for Fake PKG Games Tutorial by Jr550](https://www.psxhax.com/threads/how-to-change-ps4-dlc-region-for-fake-pkg-games-tutorial-by-jr550.6038/)  
 [orbis-pub-gen](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/)  
-[sfo by Hippie68](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/)  
+[PS4-Fake-PKG-Tools-3.87 by CyB1K](https://github.com/CyB1K/PS4-Fake-PKG-Tools-3.87)  
+[sfo by Hippie68](https://github.com/hippie68/sfo)  
 [ps4-dlc-unlocker-maker](https://www.psxhax.com/threads/ps4-dlc-unlocker-maker-windows-batch-file-to-create-fpkgs-by-k4ps3.11035/)  
 
