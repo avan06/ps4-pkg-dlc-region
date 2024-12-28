@@ -69,7 +69,7 @@ set pkgDigest=y
 :: =========== User Defined Block End ===========
 
 echo ---------------------------------------------------
-echo   ps4 pkg dlc region changes batch script v1.3
+echo   ps4 pkg dlc region changes batch script v1.4
 echo   based on orbis-pub-gen and sfo
 echo ---------------------------------------------------
 echo.
@@ -302,7 +302,7 @@ for /F %%N in ('dir /b /s "!pathSc0!"') do (
         echo [Info] chunkCount:!chunkCount!, scenarioCount:!scenarioCount!
       )
     )
-  ) else if not !name!!ext!==license.dat if not !name!!ext!==license.info if not !name!!ext!==psreserved.dat if not !name!!ext!==origin-deltainfo.dat if not !ext!==.dds if not !name!!ext!==pubtoolinfo.dat ( ::if "!name:playgo-=!"=="!name!" 
+  ) else if not !name!!ext!==license.dat if not !name!!ext!==license.info if not !name!!ext!==psreserved.dat if not !name!!ext!==origin-deltainfo.dat if not !name!!ext!==pubtoolinfo.dat ( ::if "!name:playgo-=!"=="!name!" if not !ext!==.dds
     if "!dirAttr!"=="d" (
       if not exist !pathSceSys!!subName! mkdir !pathSceSys!!subName!
     ) else (move /y "!fullname!" "!pathSceSys!!subName!" >nul 2>&1)
@@ -387,7 +387,7 @@ echo ==================== gp4 create ====================
         echo [Warn] Fix the TitleID [!contentTitleID! to !newTitleIDTmp!] of !subName!
         binEdit.vbs "!fullname!" "!contentTitleID!" "!newTitleIDTmp!"
       )
-    ) else if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" if not "!subName!"=="sce_sys\pubtoolinfo.dat" (
+    ) else if "!subName:sce_sys\about=!"=="!subName!" if "!subName:sce_sys\playgo-=!"=="!subName!" if not "!subName!"=="sce_discmap.plt" if not "!subName!"=="sce_discmap_patch.plt" if not "!subName!"=="sce_sys\pubtoolinfo.dat" if not "!ext!"==".dds" (
       !orbisPubCmd! gp4_file_add --force --pfs_compression !compression! !fullname! !subName:\=/! "!pathGp4!")
   )
   

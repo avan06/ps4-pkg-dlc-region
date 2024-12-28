@@ -1,6 +1,6 @@
 ﻿# ps4-pkg-dlc-region
 
-v1.2  
+v1.4  
 
 ps4-pkg-dlc-region is windows batch script can batch change the region and TitleID of the original ps4 Pkg(dlc, patch, app), and it is base on [`orbis-pub-gen`](https://www.psxhax.com/threads/free-ps2-pub-gen-fake-pkg-tools-ps2-fake-pkg-generator-for-ps4.3594/) and [`sfo by Hippie68`](https://www.psxhax.com/threads/ps4-sfo-program-to-automate-build-param-sfo-files-by-hippie68.11507/).  
 
@@ -34,10 +34,17 @@ Determines the path of sfo(hippie68), nullable if it has been set in the path of
 - pkgPath  
 Specify the path for the PKG files to be scanned. Multiple PKG files can be scanned in batches.
 
+
+### Optional options (param.sfo)
+
 - newRegion (length is 2)  
 Determine the Region of the generated pkg  
-Empty value, indicating that the Region is unchanged
+Empty value, indicating that the Region is unchanged  
 JP: Japanese, EP: European, UP: American, HP: Hong Kong, KP: Korean  
+
+- newRegionID (length is 4)  
+Determine the RegionID(length is 4 number) of the generated pkg  
+Empty value, indicating that the RegionID is unchanged  
 
 - newTitleID (length is 9)  
 Determine the TitleID of the generated pkg  
@@ -47,6 +54,12 @@ Empty value, indicating that the TitleID is unchanged
 Determine the ContentName of the generated pkg  
 Empty value, indicating that the ContentName is unchanged  
 ContentName is the name at the end of CONTENT_ID, which is typically 16 characters in length.  
+
+- newSdkVer (length is 8)  
+Please specify the SdkVer for the generated pkg.  
+Leave it blank if you don't want to change it.  
+SdkVer is an attribute value in the PUBTOOLINFO of param.sfo file, and it is usually set to 05050000.  
+
 
 ### Misc options  
 
@@ -62,35 +75,39 @@ y: remove all temporary files, n: don't delete anything
 - passcode  
 Determine the passcode value for pkg (extract and generate)  
 
+
 ### Extract options  
 
-- pkgExtractShowStatus (New)  
+- pkgExtractShowStatus 
 Determines whether to show the extract status, show extract status will be slower if the pkg file size is very large,  
 y: show, n: not show
 
+
 ### Overwrite options  
 
-- overwriteUnpackedArchives (New)  
+- overwriteUnpackedArchives 
 Determines whether to still extract when an unpacked PKG archive already exists,  
 y: perform extract and overwrite, n: use existing unpacked file  
 
-- overwriteExistGP4 (New)  
+- overwriteExistGP4 
 Determines whether to override gp4 configuration, when gp4 archive already exists,  
 y: generate new gp4 file, n: use existing gp4 file  
 
+
 ### Generate options  
 
-- pkgCreate (New)  
+- pkgCreate 
 Determines whether to automatically generate a new PKG after extract,  
 y: generate new PKG, n: extract only  
 
-- pfsCompression (New)  
+- pfsCompression 
 Determines whether to enable compression for package files,  
 y: compressed, n: not compressed  
 
-- pkgDigest (New)  
+- pkgDigest 
 Determines whether to calculate digest after pkg create,  
 y: digest calculation, n: faster creation  
+
 
 ## Reference
 
